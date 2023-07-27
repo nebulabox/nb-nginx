@@ -26,6 +26,7 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
 fi
 
 ./configure --prefix=/usr/share/nbng \
+--add-module=nb/modules/nginx_upstream_check_module \
 --sbin-path=/usr/bin/nbng \
 --conf-path=/etc/nbng.conf \
 --with-cc-opt="$CFLAG" \

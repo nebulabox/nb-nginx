@@ -11,15 +11,15 @@ tar xzf ./nb/zlib-*.tar.gz -C ./objs/external/
 mv ./objs/external/zlib-* ./objs/external/zlib
 
 echo "==>>> Unpack pcre"
-tar xzf ./nb/pcre2-*.tar.bz2 -C ./objs/external/
+tar xjf ./nb/pcre2-*.tar.bz2 -C ./objs/external/
 mv ./objs/external/pcre* ./objs/external/pcre
 
 
 ./configure --prefix=/usr/share/nbng \
 --sbin-path=/usr/bin/nbng \
 --conf-path=/etc/nbng.conf \
---with-cc-opt='-Ofast -fPIC' \
---with-ld-opt='-fPIC'   \
+--with-cc-opt='-w -static -Ofast -fPIC' \
+--with-ld-opt='-s -static -fPIC'   \
 --error-log-path=stderr \
 --pid-path=/var/run/nbng.pid  \
 --lock-path=/var/run/nbng.lock  \
@@ -40,7 +40,6 @@ mv ./objs/external/pcre* ./objs/external/pcre
 --with-http_v3_module    \
 --with-http_realip_module  \
 --with-http_addition_module     \
---with-http_xslt_module          \
 --with-http_sub_module            \
 --with-http_dav_module             \
 --with-http_flv_module             \

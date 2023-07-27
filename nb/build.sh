@@ -14,12 +14,22 @@ echo "==>>> Unpack pcre"
 tar xjf ./nb/pcre2-*.tar.bz2 -C ./objs/external/
 mv ./objs/external/pcre* ./objs/external/pcre
 
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+  PLATFORM='linux'
+  CFLAG=-w -static -Ofast -fPIC
+  LDFLAG=-s -static -fPIC
+elif [[ "$unamestr" == 'Darwin' ]]; then
+  PLATFORM='macos'
+  CFLAG=-w -static -Ofast -fPIC
+  LDFLAG=-fPIC
+fi
 
 ./configure --prefix=/usr/share/nbng \
 --sbin-path=/usr/bin/nbng \
 --conf-path=/etc/nbng.conf \
---with-cc-opt='-w -static -Ofast -fPIC' \
---with-ld-opt='-s -static -fPIC'   \
+--with-cc-opt="$CFLAG" \
+--with-ld-opt="$LDFLAG"   \
 --error-log-path=stderr \
 --pid-path=/var/run/nbng.pid  \
 --lock-path=/var/run/nbng.lock  \
@@ -66,6 +76,8 @@ make -j8
 
 mkdir -p release
 cp objs/nginx release/nbng
+
+rm -rf objs
 
 echo "===>> ALL DONE ==="
 

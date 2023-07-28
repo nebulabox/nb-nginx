@@ -14,13 +14,12 @@ echo "==>>> Unpack pcre"
 tar xjf ./nb/pcre2-*.tar.bz2 -C ./objs/external/
 mv ./objs/external/pcre* ./objs/external/pcre
 
-
 ./configure --prefix=/usr/share/nbng \
 --add-module=nb/modules/ngx_healthcheck_module \
 --sbin-path=/usr/bin/nbng \
 --conf-path=/etc/nbng.conf \
---with-cc-opt="-w -static -Ofast -fPIC" \
---with-ld-opt="-fPIC"   \
+--with-cc-opt="-w -Ofast -fPIC" \
+--with-ld-opt=""   \
 --error-log-path=stderr \
 --pid-path=/var/run/nbng.pid  \
 --lock-path=/var/run/nbng.lock  \

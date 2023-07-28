@@ -34,11 +34,11 @@ fi
 --error-log-path=stderr \
 --pid-path=/var/run/nbng.pid  \
 --lock-path=/var/run/nbng.lock  \
---http-client-body-temp-path=/var/run/nbng/client_body_temp  \
---http-proxy-temp-path=/var/run/nbng/proxy_temp  \
---http-fastcgi-temp-path=/var/run/nbng/fastcgi_temp  \
---http-uwsgi-temp-path=/var/run/nbng/uwsgi_temp  \
---http-scgi-temp-path=/var/run/nbng/scgi_temp  \
+--http-client-body-temp-path=/var/run/nbng_client_body_temp  \
+--http-proxy-temp-path=/var/run/nbng_proxy_temp  \
+--http-fastcgi-temp-path=/var/run/nbng_fastcgi_temp  \
+--http-uwsgi-temp-path=/var/run/nbng_uwsgi_temp  \
+--http-scgi-temp-path=/var/run/nbng_scgi_temp  \
 --http-log-path=/var/log/nbng_access.log  \
 --error-log-path=/var/log/nbng_error.log  \
 --with-compat \

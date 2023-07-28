@@ -9,6 +9,10 @@
 #include <ngx_core.h>
 #include <ngx_stream.h>
 
+#if (NGX_STREAM_UPSTREAM_CHECK)
+#include "ngx_stream_upstream_check_module.h"
+#endif
+
 
 #define ngx_stream_upstream_tries(p) ((p)->tries                              \
                                       + ((p)->next ? (p)->next->tries : 0))
@@ -110,6 +114,16 @@ ngx_stream_upstream_init_round_robin(ngx_conf_t *cf,
                 peer[n].down = server[i].down;
                 peer[n].server = server[i].name;
 
+#if (NGX_STREAM_UPSTREAM_CHECK)
+                if (!server[i].down) {
+                    peer[n].check_index =
+                        ngx_stream_upstream_check_add_peer(cf, us, &server[i].addrs[j]);
+                }
+                else {
+                    peer[n].check_index = (ngx_uint_t) NGX_ERROR;
+                }
+#endif
+
                 *peerp = &peer[n];
                 peerp = &peer[n].next;
                 n++;
@@ -180,6 +194,16 @@ ngx_stream_upstream_init_round_robin(ngx_conf_t *cf,
                 peer[n].down = server[i].down;
                 peer[n].server = server[i].name;
 
+#if (NGX_STREAM_UPSTREAM_CHECK)
+                if (!server[i].down) {
+                    peer[n].check_index =
+                        ngx_stream_upstream_check_add_peer(cf, us, &server[i].addrs[j]);
+                }
+                else {
+                    peer[n].check_index = (ngx_uint_t) NGX_ERROR;
+                }
+#endif
+
                 *peerp = &peer[n];
                 peerp = &peer[n].next;
                 n++;
@@ -247,6 +271,9 @@ ngx_stream_upstream_init_round_robin(ngx_conf_t *cf,
         peer[i].max_conns = 0;
         peer[i].max_fails = 1;
         peer[i].fail_timeout = 10;
+#if (NGX_STREAM_UPSTREAM_CHECK)
+        peer[i].check_index = (ngx_uint_t) NGX_ERROR;
+#endif
         *peerp = &peer[i];
         peerp = &peer[i].next;
     }
@@ -368,6 +395,9 @@ ngx_stream_upstream_create_round_robin_peer(ngx_stream_session_t *s,
         peer[0].max_conns = 0;
         peer[0].max_fails = 1;
         peer[0].fail_timeout = 10;
+#if (NGX_STREAM_UPSTREAM_CHECK)
+        peer[0].check_index = (ngx_uint_t) NGX_ERROR;
+#endif
         peers->peer = peer;
 
     } else {
@@ -402,6 +432,9 @@ ngx_stream_upstream_create_round_robin_peer(ngx_stream_session_t *s,
             peer[i].max_conns = 0;
             peer[i].max_fails = 1;
             peer[i].fail_timeout = 10;
+#if (NGX_STREAM_UPSTREAM_CHECK)
+            peer[i].check_index = (ngx_uint_t) NGX_ERROR;
+#endif
             *peerp = &peer[i];
             peerp = &peer[i].next;
         }
@@ -465,7 +498,11 @@ ngx_stream_upstream_get_round_robin_peer(ngx_peer_connection_t *pc, void *data)
         if (peer->max_conns && peer->conns >= peer->max_conns) {
             goto failed;
         }
-
+#if (NGX_STREAM_UPSTREAM_CHECK)
+        if (ngx_stream_upstream_check_peer_down(peer->check_index)) {
+            goto failed;
+        }
+#endif
         rrp->current = peer;
 
     } else {
@@ -570,7 +607,11 @@ ngx_stream_upstream_get_peer(ngx_stream_upstream_rr_peer_data_t *rrp)
         if (peer->max_conns && peer->conns >= peer->max_conns) {
             continue;
         }
-
+#if (NGX_STREAM_UPSTREAM_CHECK)
+        if (ngx_stream_upstream_check_peer_down(peer->check_index)) {
+            continue;
+        }
+#endif
         peer->current_weight += peer->effective_weight;
         total += peer->effective_weight;
 

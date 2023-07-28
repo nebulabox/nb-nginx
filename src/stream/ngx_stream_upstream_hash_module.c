@@ -8,6 +8,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_stream.h>
+#if (NGX_STREAM_UPSTREAM_CHECK)
+#include "ngx_stream_upstream_check_module.h"
+#endif
 
 
 typedef struct {
@@ -236,6 +239,16 @@ ngx_stream_upstream_get_hash_peer(ngx_peer_connection_t *pc, void *data)
             ngx_stream_upstream_rr_peer_unlock(hp->rrp.peers, peer);
             goto next;
         }
+
+#if (NGX_STREAM_UPSTREAM_CHECK)
+        ngx_log_debug1(NGX_LOG_DEBUG_STREAM, pc->log, 0,
+                "(stream_module)get least_conn peer, check_index: %ui",
+                peer->check_index);
+
+        if (ngx_stream_upstream_check_peer_down(peer->check_index)) {
+            goto next;
+        }
+#endif
 
         if (peer->max_fails
             && peer->fails >= peer->max_fails
@@ -549,6 +562,16 @@ ngx_stream_upstream_get_chash_peer(ngx_peer_connection_t *pc, void *data)
             if (peer->down) {
                 continue;
             }
+
+#if (NGX_STREAM_UPSTREAM_CHECK)
+            ngx_log_debug1(NGX_LOG_DEBUG_STREAM, pc->log, 0,
+                "(stream_module)get_chash_peer, check_index: %ui",
+                peer->check_index);
+
+            if (ngx_stream_upstream_check_peer_down(peer->check_index)) {
+                continue;
+            }
+#endif
 
             if (peer->max_fails
                 && peer->fails >= peer->max_fails

@@ -49,6 +49,10 @@ struct ngx_stream_upstream_rr_peer_s {
 
     ngx_stream_upstream_rr_peer_t   *next;
 
+#if (NGX_STREAM_UPSTREAM_CHECK)
+    ngx_uint_t                      check_index;
+#endif
+
     NGX_COMPAT_BEGIN(25)
     NGX_COMPAT_END
 };

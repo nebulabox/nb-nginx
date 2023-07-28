@@ -1151,7 +1151,7 @@ ngx_stream_upstream_check_http_parse(ngx_upstream_check_peer_t *peer)
         *ctx->status.end = '\0';
         u_char * content_len_start = (u_char *)ngx_strstr(ctx->status.start, "Content-Length:");
         u_char * content_len_end = NULL;
-        ngx_uint_t found_body_len, body_len = 0;
+        ngx_uint_t found_body_len=0, body_len = 0;
         if (content_len_start != NULL) {
             content_len_end = ngx_strlchr(content_len_start, ctx->status.end, '\r');
             if (content_len_end != NULL) {

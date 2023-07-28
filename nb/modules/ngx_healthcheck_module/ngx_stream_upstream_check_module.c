@@ -1137,7 +1137,7 @@ ngx_stream_upstream_check_http_parse(ngx_upstream_check_peer_t *peer)
         } else if (code >= 300 && code < 400) {
             code_n = NGX_CHECK_HTTP_3XX;
         } else if (code >= 400 && code < 500) {
-            peer->pc.connection->error = 1;
+            // peer->pc.connection->error = 1;
             code_n = NGX_CHECK_HTTP_4XX;
         } else if (code >= 500 && code < 600) {
             peer->pc.connection->error = 1;

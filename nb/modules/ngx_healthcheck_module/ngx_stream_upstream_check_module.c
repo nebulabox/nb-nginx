@@ -289,7 +289,7 @@ static ngx_check_conf_t  ngx_check_types[] = {
         { NGX_CHECK_TYPE_HTTP,
                 ngx_string("http"),
                 ngx_string("GET / HTTP/1.0\r\n\r\n"),
-                NGX_CONF_BITMASK_SET | NGX_CHECK_HTTP_2XX | NGX_CHECK_HTTP_3XX | NGX_CHECK_HTTP_4XX,
+                NGX_CONF_BITMASK_SET | NGX_CHECK_HTTP_2XX | NGX_CHECK_HTTP_3XX,
                 ngx_stream_upstream_check_send_handler,
                 ngx_stream_upstream_check_recv_handler,
                 ngx_stream_upstream_check_http_init,
@@ -1137,7 +1137,7 @@ ngx_stream_upstream_check_http_parse(ngx_upstream_check_peer_t *peer)
         } else if (code >= 300 && code < 400) {
             code_n = NGX_CHECK_HTTP_3XX;
         } else if (code >= 400 && code < 500) {
-            // peer->pc.connection->error = 1;
+            peer->pc.connection->error = 1;
             code_n = NGX_CHECK_HTTP_4XX;
         } else if (code >= 500 && code < 600) {
             peer->pc.connection->error = 1;

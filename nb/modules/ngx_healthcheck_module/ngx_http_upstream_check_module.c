@@ -904,7 +904,8 @@ ngx_http_upstream_check_add_timers(ngx_cycle_t *cycle)
          * We add a random start time here, since we don't want to trigger
          * the check events too close to each other at the beginning.
          */
-        delay = ucscf->check_interval > 1000 ? ucscf->check_interval : 1000;
+        // delay = ucscf->check_interval > 1000 ? ucscf->check_interval : 1000;
+        delay = 1000;
         t = ngx_random() % delay;
 
         ngx_add_timer(&peer[i].check_ev, t);
@@ -940,7 +941,7 @@ ngx_http_upstream_check_begin_handler(ngx_event_t *event)
     peer = event->data;
     ucscf = peer->conf;
 
-    ngx_add_timer(event, 1000);
+    ngx_add_timer(event, ucscf->check_interval / 2);//zhoucx: what's mean?
 
     /* This process is processing this peer now. */
     if ((peer->shm->owner == ngx_pid  ||

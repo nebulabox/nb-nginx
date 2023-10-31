@@ -571,7 +571,8 @@ ngx_stream_upstream_check_add_timers(ngx_cycle_t *cycle)
          * the check events too close to each other at the beginning.
          */
         // ensure interval >= 1000ms.
-        delay = ucscf->check_interval > 1000 ? ucscf->check_interval : 1000;
+        // delay = ucscf->check_interval > 1000 ? ucscf->check_interval : 1000;
+        delay = 1000
         t = ngx_random() % delay; // t in range(0~999 ms)
 
         ngx_add_timer(&peer[i].check_ev, t);
@@ -612,7 +613,8 @@ ngx_stream_upstream_check_begin_handler(ngx_event_t *event)
         return;
     }
 
-    ngx_add_timer(event, 1000);//zhoucx: what's mean?
+    ngx_add_timer(event, ucscf->check_interval / 2);//zhoucx: what's mean?
+
 
     /* This process is processing this peer now. */
     if ((peer->shm->owner == ngx_pid  ||

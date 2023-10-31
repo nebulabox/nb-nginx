@@ -19,8 +19,8 @@ mv ./objs/external/pcre* ./objs/external/pcre
 --add-module=nb/modules/ngx_healthcheck_module \
 --sbin-path=/usr/bin/nbng \
 --conf-path=/etc/nbng.conf \
---with-cc-opt="-w -static -Ofast -fPIC" \
---with-ld-opt="-s -static -fPIC"   \
+--with-cc-opt="-w -Ofast -fPIC" \
+--with-ld-opt="-s -fPIC"   \
 --error-log-path=stderr \
 --pid-path=/var/run/nbng.pid  \
 --lock-path=/var/run/nbng.lock  \

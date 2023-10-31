@@ -940,7 +940,7 @@ ngx_http_upstream_check_begin_handler(ngx_event_t *event)
     peer = event->data;
     ucscf = peer->conf;
 
-    ngx_add_timer(event, ucscf->check_interval / 2);
+    ngx_add_timer(event, 1000);
 
     /* This process is processing this peer now. */
     if ((peer->shm->owner == ngx_pid  ||

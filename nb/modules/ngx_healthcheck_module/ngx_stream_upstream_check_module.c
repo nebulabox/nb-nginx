@@ -612,7 +612,7 @@ ngx_stream_upstream_check_begin_handler(ngx_event_t *event)
         return;
     }
 
-    ngx_add_timer(event, ucscf->check_interval / 2);//zhoucx: what's mean?
+    ngx_add_timer(event, 1000);//zhoucx: what's mean?
 
     /* This process is processing this peer now. */
     if ((peer->shm->owner == ngx_pid  ||

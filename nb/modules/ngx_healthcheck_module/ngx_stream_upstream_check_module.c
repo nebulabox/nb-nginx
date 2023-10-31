@@ -572,7 +572,7 @@ ngx_stream_upstream_check_add_timers(ngx_cycle_t *cycle)
          */
         // ensure interval >= 1000ms.
         // delay = ucscf->check_interval > 1000 ? ucscf->check_interval : 1000;
-        delay = 1000
+        delay = 1000;
         t = ngx_random() % delay; // t in range(0~999 ms)
 
         ngx_add_timer(&peer[i].check_ev, t);

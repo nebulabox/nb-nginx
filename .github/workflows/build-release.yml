@@ -58,6 +58,8 @@ jobs:
           # Set an output parameter `uname` for use in subsequent steps
           run: |
             uname -a
+            apt update -q -y
+            apt install -q -y git build-essential tar bzip2 cmake ninja-build gzip
             bash ./nb/build_linux_static.sh
             echo "ls -al release/*"
             file release/nbng

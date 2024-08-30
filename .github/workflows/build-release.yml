@@ -10,6 +10,42 @@ on:
         required: true
         type: string
 jobs:
+  build-linux-arm64:
+    runs-on: ubuntu-24.04
+    name: Build on ubuntu-24.04 arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: uraimo/run-on-arch-action@v2
+        name: Build Release
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: ubuntu24.04
+          # Not required, but speeds up builds by storing container images in
+          # a GitHub package registry.
+          githubToken: ${{ github.token }}
+          # Set an output parameter `uname` for use in subsequent steps
+          run: |
+            bash ./nb/build_linux_static.sh
+            echo "ls -al release/*"
+            file release/nbng
+
+      - name: Package
+        shell: bash
+        run: |
+          tar cvfJ release/nbng.linux.arm64.tar.xz release/nbng
+          rm release/nbng
+
+      - name: Upload Github Assets
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: release/*
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+
   build-macos:
     runs-on: macos-latest
     env:

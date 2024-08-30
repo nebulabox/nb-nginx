@@ -98,7 +98,8 @@ typedef enum {
     NGX_ERROR_INFO,
     NGX_ERROR_IGNORE_ECONNRESET,
     NGX_ERROR_IGNORE_EINVAL,
-    NGX_ERROR_IGNORE_EMSGSIZE
+    NGX_ERROR_IGNORE_EMSGSIZE,
+    NGX_ERROR_DEBUG
 } ngx_connection_log_error_e;
 
 
@@ -206,6 +207,7 @@ struct ngx_connection_s {
 #define ngx_set_connection_log(c, l)                                         \
                                                                              \
     c->log->file = l->file;                                                  \
+    c->log->limit = l->limit;                                                \
     c->log->next = l->next;                                                  \
     c->log->writer = l->writer;                                              \
     c->log->wdata = l->wdata;                                                \

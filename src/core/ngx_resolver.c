@@ -1774,7 +1774,7 @@ ngx_resolver_process_response(ngx_resolver_t *r, u_char *buf, size_t n,
                    (response->nar_hi << 8) + response->nar_lo);
 
     /* response to a standard query */
-    if ((flags & 0xf870) != 0x8000 || (trunc && tcp)) {
+    if ((flags & 0xf850) != 0x8000 || (trunc && tcp)) {
         ngx_log_error(r->log_level, r->log, 0,
                       "invalid %s DNS response %ui fl:%04Xi",
                       tcp ? "TCP" : "UDP", ident, flags);
@@ -4625,7 +4625,8 @@ ngx_tcp_connect(ngx_resolver_connection_t *rec)
                 || err == NGX_ENETDOWN
                 || err == NGX_ENETUNREACH
                 || err == NGX_EHOSTDOWN
-                || err == NGX_EHOSTUNREACH)
+                || err == NGX_EHOSTUNREACH
+                || err == NGX_ENOENT)
             {
                 level = NGX_LOG_ERR;
 

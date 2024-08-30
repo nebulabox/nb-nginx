@@ -9,8 +9,8 @@
 #define _NGINX_H_INCLUDED_
 
 
-#define nginx_version      1025005
-#define NGINX_VERSION      "1.25.5"
+#define nginx_version      1027004
+#define NGINX_VERSION      "1.27.4"
 
 #define NGINX_NAME         "nbng"
 #define NGINX_VER          NGINX_NAME "/" NGINX_VERSION

@@ -1466,6 +1466,15 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
             /* a header line has been parsed successfully */
 
+            if (r->headers_in.count++ >= cscf->max_headers) {
+                r->lingering_close = 1;
+                ngx_log_error(NGX_LOG_INFO, c->log, 0,
+                              "client sent too many header lines");
+                ngx_http_finalize_request(r,
+                                          NGX_HTTP_REQUEST_HEADER_TOO_LARGE);
+                break;
+            }
+
             h = ngx_list_push(&r->headers_in.headers);
             if (h == NULL) {
                 ngx_http_close_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1622,16 +1631,6 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http alloc large header buffer");
-
-    if (request_line && r->state == 0) {
-
-        /* the client fills up the buffer with "\r\n" */
-
-        r->header_in->pos = r->header_in->start;
-        r->header_in->last = r->header_in->start;
-
-        return NGX_OK;
-    }
 
     old = request_line ? r->request_start : r->header_name_start;
 
@@ -1978,6 +1977,15 @@ ngx_http_process_request_header(ngx_http_request_t *r)
     }
 
     if (r->headers_in.content_length) {
+        if (r->headers_in.transfer_encoding) {
+            ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                          "client sent \"Content-Length\" and "
+                          "\"Transfer-Encoding\" headers "
+                          "at the same time");
+            ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
+            return NGX_ERROR;
+        }
+
         r->headers_in.content_length_n =
                             ngx_atoof(r->headers_in.content_length->value.data,
                                       r->headers_in.content_length->value.len);
@@ -2003,15 +2011,6 @@ ngx_http_process_request_header(ngx_http_request_t *r)
             && ngx_strncasecmp(r->headers_in.transfer_encoding->value.data,
                                (u_char *) "chunked", 7) == 0)
         {
-            if (r->headers_in.content_length) {
-                ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                              "client sent \"Content-Length\" and "
-                              "\"Transfer-Encoding\" headers "
-                              "at the same time");
-                ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
-                return NGX_ERROR;
-            }
-
             r->headers_in.chunked = 1;
 
         } else {
@@ -2772,7 +2771,7 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
 
     if (r->main->count != 1) {
 
-        if (r->discard_body) {
+        if (r->discarding_body) {
             r->read_event_handler = ngx_http_discarded_request_body_handler;
             ngx_add_timer(r->connection->read, clcf->lingering_timeout);
 
@@ -2830,7 +2829,7 @@ ngx_http_set_write_handler(ngx_http_request_t *r)
 
     r->http_state = NGX_HTTP_WRITING_REQUEST_STATE;
 
-    r->read_event_handler = r->discard_body ?
+    r->read_event_handler = r->discarding_body ?
                                 ngx_http_discarded_request_body_handler:
                                 ngx_http_test_reading;
     r->write_event_handler = ngx_http_writer;
@@ -3100,6 +3099,7 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
 {
     int                        tcp_nodelay;
     ngx_buf_t                 *b, *f;
+    ngx_msec_t                 timer;
     ngx_chain_t               *cl, *ln;
     ngx_event_t               *rev, *wev;
     ngx_connection_t          *c;
@@ -3300,10 +3300,19 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
     r->http_state = NGX_HTTP_KEEPALIVE_STATE;
 #endif
 
-    c->idle = 1;
     ngx_reusable_connection(c, 1);
 
-    ngx_add_timer(rev, clcf->keepalive_timeout);
+    if (clcf->lingering_close
+        && clcf->lingering_timeout > 0)
+    {
+        timer = ngx_min(clcf->keepalive_timeout, clcf->lingering_timeout);
+        hc->keepalive_timeout = clcf->keepalive_timeout - timer;
+        ngx_add_timer(rev, timer);
+
+    } else {
+        c->idle = 1;
+        ngx_add_timer(rev, clcf->keepalive_timeout);
+    }
 
     if (rev->ready) {
         ngx_post_event(rev, &ngx_posted_events);
@@ -3314,16 +3323,32 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
 static void
 ngx_http_keepalive_handler(ngx_event_t *rev)
 {
-    size_t             size;
-    ssize_t            n;
-    ngx_buf_t         *b;
-    ngx_connection_t  *c;
+    size_t                  size;
+    ssize_t                 n;
+    ngx_buf_t              *b;
+    ngx_connection_t       *c;
+    ngx_http_connection_t  *hc;
 
     c = rev->data;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "http keepalive handler");
 
-    if (rev->timedout || c->close) {
+    if (rev->timedout) {
+        if (c->idle || ngx_exiting) {
+            ngx_http_close_connection(c);
+            return;
+        }
+
+        hc = c->data;
+
+        c->idle = 1;
+        rev->timedout = 0;
+        ngx_add_timer(rev, hc->keepalive_timeout);
+
+        return;
+    }
+
+    if (c->close) {
         ngx_http_close_connection(c);
         return;
     }

@@ -182,6 +182,7 @@ typedef struct {
 
 typedef struct {
     ngx_list_t                        headers;
+    ngx_uint_t                        count;
 
     ngx_table_elt_t                  *host;
     ngx_table_elt_t                  *connection;
@@ -277,6 +278,7 @@ typedef struct {
 
     ngx_table_elt_t                  *cache_control;
     ngx_table_elt_t                  *link;
+    ngx_table_elt_t                  *age;
 
     ngx_str_t                        *override_charset;
 
@@ -305,6 +307,7 @@ typedef struct {
     ngx_chain_t                      *busy;
     ngx_http_chunked_t               *chunked;
     ngx_http_client_body_handler_pt   post_handler;
+    unsigned                          no_buffering:1;
     unsigned                          filter_need_buffering:1;
     unsigned                          last_sent:1;
     unsigned                          last_saved:1;
@@ -328,6 +331,8 @@ typedef struct {
     ngx_int_t                         nbusy;
 
     ngx_chain_t                      *free;
+
+    ngx_msec_t                        keepalive_timeout;
 
     unsigned                          ssl:1;
     unsigned                          proxy_protocol:1;
@@ -537,6 +542,7 @@ struct ngx_http_request_s {
     unsigned                          keepalive:1;
     unsigned                          lingering_close:1;
     unsigned                          discard_body:1;
+    unsigned                          discarding_body:1;
     unsigned                          reading_body:1;
     unsigned                          internal:1;
     unsigned                          error_page:1;

@@ -1341,6 +1341,9 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         ctx->internal_body_length = -1;
         ctx->internal_chunked = 1;
 
+    } else if (r->discard_body) {
+        ctx->internal_body_length = -1;
+
     } else {
         ctx->internal_body_length = r->headers_in.content_length_n;
     }
@@ -4044,7 +4047,7 @@ ngx_http_proxy_init_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
             return NGX_ERROR;
         }
 
-        copy->code = (ngx_http_script_code_pt) (void *)
+        copy->code = (ngx_http_script_code_pt) (uintptr_t)
                                                  ngx_http_script_copy_len_code;
         copy->len = src[i].key.len;
 

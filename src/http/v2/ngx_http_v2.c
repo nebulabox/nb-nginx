@@ -1078,13 +1078,6 @@ ngx_http_v2_state_read_data(ngx_http_v2_connection_t *h2c, u_char *pos,
     r = stream->request;
     fc = r->connection;
 
-    if (r->reading_body && !r->request_body_no_buffering) {
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, h2c->connection->log, 0,
-                       "skipping http2 DATA frame");
-
-        return ngx_http_v2_state_skip_padded(h2c, pos, end);
-    }
-
     if (r->headers_in.content_length_n < 0 && !r->headers_in.chunked) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, h2c->connection->log, 0,
                        "skipping http2 DATA frame");
@@ -1106,7 +1099,11 @@ ngx_http_v2_state_read_data(ngx_http_v2_connection_t *h2c, u_char *pos,
                                               stream->in_closed, 0);
 
         if (rc != NGX_OK && rc != NGX_AGAIN) {
+
             stream->skip_data = 1;
+            r->discard_body = 1;
+            r->request_body->bufs = NULL;
+
             ngx_http_finalize_request(r, rc);
         }
 
@@ -1339,7 +1336,8 @@ ngx_http_v2_state_headers(ngx_http_v2_connection_t *h2c, u_char *pos,
     clcf = ngx_http_get_module_loc_conf(h2c->http_connection->conf_ctx,
                                         ngx_http_core_module);
 
-    if (clcf->keepalive_timeout == 0
+    if (ngx_exiting
+        || clcf->keepalive_timeout == 0
         || h2c->connection->requests >= clcf->keepalive_requests
         || ngx_current_msec - h2c->connection->start_time
            > clcf->keepalive_time)
@@ -1817,6 +1815,15 @@ ngx_http_v2_state_process_header(ngx_http_v2_connection_t *h2c, u_char *pos,
         }
 
     } else {
+        cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
+
+        if (r->headers_in.count++ >= cscf->max_headers) {
+            ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                          "client sent too many header lines");
+            ngx_http_finalize_request(r, NGX_HTTP_REQUEST_HEADER_TOO_LARGE);
+            goto error;
+        }
+
         h = ngx_list_push(&r->headers_in.headers);
         if (h == NULL) {
             return ngx_http_v2_connection_error(h2c,
@@ -3768,6 +3775,7 @@ ngx_http_v2_run_request(ngx_http_request_t *r)
                       "client prematurely closed stream");
 
         r->stream->skip_data = 1;
+        r->discard_body = 1;
 
         ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
         goto failed;
@@ -3807,6 +3815,7 @@ ngx_http_v2_read_request_body(ngx_http_request_t *r)
 
     if (stream->skip_data) {
         r->request_body_no_buffering = 0;
+        r->connection->log->action = NULL;
         rb->post_handler(r);
         return NGX_OK;
     }
@@ -4061,6 +4070,7 @@ ngx_http_v2_process_request_body(ngx_http_request_t *r, u_char *pos,
     }
 
     r->read_event_handler = ngx_http_block_reading;
+    r->connection->log->action = NULL;
     rb->post_handler(r);
 
     return NGX_OK;
@@ -4197,7 +4207,11 @@ ngx_http_v2_read_client_request_body_handler(ngx_http_request_t *r)
     rc = ngx_http_v2_process_request_body(r, NULL, 0, r->stream->in_closed, 1);
 
     if (rc != NGX_OK && rc != NGX_AGAIN) {
+
         r->stream->skip_data = 1;
+        r->discard_body = 1;
+        r->request_body->bufs = NULL;
+
         ngx_http_finalize_request(r, rc);
         return;
     }
@@ -4236,11 +4250,7 @@ ngx_http_v2_read_client_request_body_handler(ngx_http_request_t *r)
         if (window < stream->recv_window) {
             ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
                           "http2 negative window update");
-
-            stream->skip_data = 1;
-
-            ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-            return;
+            goto error;
         }
 
         return;
@@ -4250,18 +4260,26 @@ ngx_http_v2_read_client_request_body_handler(ngx_http_request_t *r)
                                        window - stream->recv_window)
         == NGX_ERROR)
     {
-        stream->skip_data = 1;
-        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-        return;
+        goto error;
     }
 
     stream->recv_window = window;
 
     if (ngx_http_v2_send_output_queue(h2c) == NGX_ERROR) {
-        stream->skip_data = 1;
-        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-        return;
+        goto error;
     }
+
+    return;
+
+error:
+
+    stream->skip_data = 1;
+    r->discard_body = 1;
+    r->request_body->bufs = NULL;
+
+    ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+    return;
+
 }
 
 
@@ -4283,6 +4301,9 @@ ngx_http_v2_read_unbuffered_request_body(ngx_http_request_t *r)
 
     if (fc->read->timedout) {
         if (stream->recv_window) {
+            ngx_log_error(NGX_LOG_INFO, fc->log, NGX_ETIMEDOUT,
+                          "client timed out");
+
             stream->skip_data = 1;
             fc->timedout = 1;
 

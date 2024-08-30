@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           cd release
-          tar cvfJ nbng.macos.x64.tar.xz nbng
+          tar cvfJ nbng.linux.x64.tar.xz nbng
           cd ..
           ls -al release/
 
@@ -38,7 +38,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: release/nbng.macos.x64.tar.xz
+          files: release/nbng.linux.x64.tar.xz
           prerelease: ${{ contains(github.ref_name, '-') }}
           tag_name: ${{ inputs.tag || github.ref_name }}
 
@@ -127,8 +127,8 @@ jobs:
         run: |
           cd release
           tar cvfJ nbng.macos.arm64.tar.xz nbng
-          ls -al release/
           cd ..
+          ls -al release/
 
       - name: Upload Github Assets
         uses: softprops/action-gh-release@v1

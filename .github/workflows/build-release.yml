@@ -11,8 +11,8 @@ on:
         type: string
 jobs:
   build-linux-arm64:
-    runs-on: ubuntu-24.04
-    name: Build on ubuntu-24.04 arm64
+    runs-on: ubuntu_latest
+    name: Build on ubuntu_latest arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -21,12 +21,13 @@ jobs:
         id: runcmd
         with:
           arch: aarch64
-          distro: ubuntu24.04
+          distro: ubuntu_latest
           # Not required, but speeds up builds by storing container images in
           # a GitHub package registry.
           githubToken: ${{ github.token }}
           # Set an output parameter `uname` for use in subsequent steps
           run: |
+            uname -a
             bash ./nb/build_linux_static.sh
             echo "ls -al release/*"
             file release/nbng

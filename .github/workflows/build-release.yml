@@ -84,16 +84,16 @@ jobs:
         shell: bash
         run: |
           cd "${PWD}/artifacts"
-          tar cvfJ ../../nbng.linux.arm64.tar.xz "nbng"
-          cd ../..
-          ls -al
+          tar cvfJ nbng.linux.arm64.tar.xz "nbng"
+          cd ..
+          ls -al "${PWD}/artifacts"
 
       - name: Upload Github Assets
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: nbng.linux.arm64.tar.xz
+          files: artifacts/nbng.linux.arm64.tar.xz
           prerelease: ${{ contains(github.ref_name, '-') }}
           tag_name: ${{ inputs.tag || github.ref_name }}
 

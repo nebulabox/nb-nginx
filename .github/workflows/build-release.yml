@@ -28,17 +28,20 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          tar cvfJ release/nbng.macos.x64.tar.xz release/nbng
-          rm release/nbng
+          cd release
+          tar cvfJ nbng.macos.x64.tar.xz nbng
+          cd ..
+          ls -al release/
 
       - name: Upload Github Assets
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: release/*
+          files: release/nbng.macos.x64.tar.xz
           prerelease: ${{ contains(github.ref_name, '-') }}
           tag_name: ${{ inputs.tag || github.ref_name }}
+
 
   build-linux-arm64:
     runs-on: ubuntu-22.04
@@ -55,29 +58,45 @@ jobs:
           # Not required, but speeds up builds by storing container images in
           # a GitHub package registry.
           githubToken: ${{ github.token }}
-          # Set an output parameter `uname` for use in subsequent steps
+          # Create an artifacts directory
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+          # Mount the artifacts directory as /artifacts in the container
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/artifacts"
+            
           run: |
             uname -a
             apt update -q -y
             apt install -q -y git build-essential tar bzip2 cmake ninja-build gzip file
             bash ./nb/build_linux_static.sh
-            echo "ls -al release/*"
-            file release/nbng
+            # Produce a binary artifact and place it in the mounted volume
+            cp release/nbng "/artifacts/nbng"
+            echo "Produced artifact at /artifacts/nbng"
+      
+      - name: Show the results file
+        # Items placed in /artifacts in the container will be in ${PWD}/artifacts on the host.
+        run: |
+          ls -al "${PWD}/artifacts"
+          file "${PWD}/artifacts/nbng"
 
       - name: Package
         shell: bash
         run: |
-          tar cvfJ release/nbng.linux.arm64.tar.xz release/nbng
-          rm release/nbng
+          cd "${PWD}/artifacts"
+          tar cvfJ ../../nbng.linux.arm64.tar.xz "nbng"
+          cd ../..
+          ls -al
 
       - name: Upload Github Assets
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: release/*
+          files: nbng.linux.arm64.tar.xz
           prerelease: ${{ contains(github.ref_name, '-') }}
           tag_name: ${{ inputs.tag || github.ref_name }}
+
 
   build-macos:
     runs-on: macos-latest
@@ -106,14 +125,16 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          tar cvfJ release/nbng.macos.arm64.tar.xz release/nbng
-          rm release/nbng
+          cd release
+          tar cvfJ nbng.macos.arm64.tar.xz nbng
+          ls -al release/
+          cd ..
 
       - name: Upload Github Assets
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: release/*
+          files: release/nbng.macos.arm64.tar.xz
           prerelease: ${{ contains(github.ref_name, '-') }}
           tag_name: ${{ inputs.tag || github.ref_name }}

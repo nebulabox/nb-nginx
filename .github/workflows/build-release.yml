@@ -32,7 +32,7 @@ jobs:
       - name: Build release
         shell: bash
         run: |
-          ./nb/build_macos.sh
+          bash ./nb/build_macos.sh
       
       - name: Package
         shell: bash

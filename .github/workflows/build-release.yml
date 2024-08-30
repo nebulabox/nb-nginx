@@ -10,34 +10,34 @@ on:
         required: true
         type: string
 jobs:
-  # build-linux-x64:
-  #   runs-on: ubuntu-latest
-  #   name: Build on ubuntu-latest x64
-  #   steps:
-  #     - uses: actions/checkout@v4
+  build-linux-x64:
+    runs-on: ubuntu-latest
+    name: Build on ubuntu-latest x64
+    steps:
+      - uses: actions/checkout@v4
 
-  #   - name: Build release
-  #       shell: bash
-  #       run: |
-  #         uname -a
-  #         bash ./nb/build_linux_static.sh
-  #         echo "ls -al release/*"
-  #         file release/nbng
+    - name: Build release
+        shell: bash
+        run: |
+          uname -a
+          bash ./nb/build_linux_static.sh
+          echo "ls -al release/*"
+          file release/nbng
       
-  #     - name: Package
-  #       shell: bash
-  #       run: |
-  #         tar cvfJ release/nbng.macos.x64.tar.xz release/nbng
-  #         rm release/nbng
+      - name: Package
+        shell: bash
+        run: |
+          tar cvfJ release/nbng.macos.x64.tar.xz release/nbng
+          rm release/nbng
 
-  #     - name: Upload Github Assets
-  #       uses: softprops/action-gh-release@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       with:
-  #         files: release/*
-  #         prerelease: ${{ contains(github.ref_name, '-') }}
-  #         tag_name: ${{ inputs.tag || github.ref_name }}
+      - name: Upload Github Assets
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: release/*
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
 
 
   build-linux-arm64:
@@ -59,7 +59,7 @@ jobs:
           run: |
             uname -a
             apt update -q -y
-            apt install -q -y git build-essential tar bzip2 cmake ninja-build gzip
+            apt install -q -y git build-essential tar bzip2 cmake ninja-build gzip file
             bash ./nb/build_linux_static.sh
             echo "ls -al release/*"
             file release/nbng
@@ -79,41 +79,41 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           tag_name: ${{ inputs.tag || github.ref_name }}
 
-  # build-macos:
-  #   runs-on: macos-latest
-  #   env:
-  #     BUILD_OS: "macos"
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       target:
-  #         - aarch64-apple-darwin
-  #   steps:
-  #     - uses: actions/checkout@v4
+  build-macos:
+    runs-on: macos-latest
+    env:
+      BUILD_OS: "macos"
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Install GNU tar
-  #       if: runner.os == 'macOS'
-  #       run: |
-  #         brew install gnu-tar
-  #         # echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
-  #         echo "/usr/local/opt/gnu-tar/libexec/gnubin" >> $GITHUB_PATH
+      - name: Install GNU tar
+        if: runner.os == 'macOS'
+        run: |
+          brew install gnu-tar
+          # echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+          echo "/usr/local/opt/gnu-tar/libexec/gnubin" >> $GITHUB_PATH
 
-  #     - name: Build release
-  #       shell: bash
-  #       run: |
-  #         bash ./nb/build_macos.sh
+      - name: Build release
+        shell: bash
+        run: |
+          bash ./nb/build_macos.sh
       
-  #     - name: Package
-  #       shell: bash
-  #       run: |
-  #         tar cvfJ release/nbng.macos.arm64.tar.xz release/nbng
-  #         rm release/nbng
+      - name: Package
+        shell: bash
+        run: |
+          tar cvfJ release/nbng.macos.arm64.tar.xz release/nbng
+          rm release/nbng
 
-  #     - name: Upload Github Assets
-  #       uses: softprops/action-gh-release@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       with:
-  #         files: release/*
-  #         prerelease: ${{ contains(github.ref_name, '-') }}
-  #         tag_name: ${{ inputs.tag || github.ref_name }}
+      - name: Upload Github Assets
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: release/*
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
